@@ -188,7 +188,7 @@ class Game
 
       // Updates the game when played a domino.
       $stock->setLine($line);
-//      $this->printMove($styledName, $player[$match], $this->line); @todo print
+      $printer->printMove($name, $hand[$match], $stock->getLine());
 
       unset($hand[$match]);
 
