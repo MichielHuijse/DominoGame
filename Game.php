@@ -35,19 +35,14 @@ class Game
 
       foreach ($players as $player) {
         if ($player->getName() === $turn) {
-
-          $currentPlayer = $player;
-
+          $this->turn($player, $stock, $printer);
+          $this->checkGameStatus($players);
+          $stock->setTwoEnds();
         }
         else {
           $waitingPlayer = $player;
         }
       }
-
-
-      $this->turn($currentPlayer, $stock, $printer);
-      $this->checkGameStatus($players);
-      $stock->setTwoEnds();
 
       $this->setTurn($waitingPlayer->getName());
     }
@@ -76,28 +71,21 @@ class Game
   public function checkGameStatus($players)
   {
     // Stop the game, both players can't play.
-    if ($players[0]->playercantPlay === true && $players[1]->playercantPlay === true) {
+    if ($players[0]->getPlayerCantPlay() === true && $players[1]->getPlayerCantPlay() === true) {
       echo "<p>Both players can\'t play.</p>";
       $this->setEndGame(True);
       return;
     }
 
-    // Check if there is a winner.
-    if (empty($players[0]->getHand())) {
-      $name = $players[0]->getName();
-//      $styledName = $this->styledName($name, 1);
-      echo "<p>{$name} has won.</p>";
-      $this->setEndGame(True);
-      return;
-    }
-
-    // Check if there is a winner.
-    if (empty($players[1]->getHand())) {
-      $name = $players[1]->getName();
-      //      $styledName = $this->styledName($name, 1);
-      echo "<p>{$name} has won.</p>";
-      $this->setEndGame(True);
-      return;
+    foreach ($players as $player) {
+      // Check if there is a winner.
+      if (empty($player->getHand())) {
+        $name = $player->getName();
+        //      $styledName = $this->styledName($name, 1);
+        echo "<p>{$name} has won.</p>";
+        $this->setEndGame(True);
+        return;
+      }
     }
 
 //    $this->turnNumber = ($this->turnNumber)+1; @todo
@@ -116,81 +104,50 @@ class Game
     $line = $stock->getLine();
     $twoEnds = $stock->getTwoEnds();
     $name = $player->getName();
+    $match = null;
 
     $hand = $player->getHand();
 //    $styledName = $printer->styledName($name); @todo
 
-    $match = null;
-    $reverse = null;
-    $begin = null;
+        foreach ($hand as $key => $value) {
+          if ($hand[$key][0] === $twoEnds[0]) {
+            array_unshift($line, array_reverse($hand[$key], false));
+            $match = true;
+            break;
 
-    // Gives index of match tile on first end, tile should be reversed.
-    if ($match === null) {
-      foreach ($hand as $key => $value) {
-        if ($hand[$key][0] === $twoEnds[0]) {
-          $match = $key;
-          $reverse = true;
-          $begin = true;
-        }
+          }
+
+      // Gives index of match tile on first end.
+          if ($hand[$key][1] === $twoEnds[0]) {
+            array_unshift($line, $hand[$key]);
+            $match = true;
+            break;
+
+          }
+
+      // Gives index of match tile on last end.
+          if ($hand[$key][0] === $twoEnds[1]) {
+            array_push($line, $hand[$key]);
+            $match = true;
+            break;
+
+      }
+
+      // Gives index of reverse match tile on last end, tile should be reversed.
+          if ($hand[$key][1] === $twoEnds[1]) {
+            array_push($line, array_reverse($hand[$key], false));
+            $match = true;
+            break;
       }
     }
 
-    // Gives index of match tile on first end.
-    if ($match === null) {
-      foreach ($hand as $key => $value) {
-        if ($hand[$key][1] === $twoEnds[0]) {
-          $match = $key;
-          $reverse = false;
-          $begin = true;
-        }
-      }
-    }
-
-    // Gives index of match tile on last end.
-    if ($match === null) {
-      foreach ($hand as $key => $value) {
-        if ($hand[$key][0] === $twoEnds[1]) {
-          $match = $key;
-          $reverse = false;
-          $begin = false;
-        }
-      }
-    }
-
-    // Gives index of reverse match tile on last end, tile should be reversed.
-    if ($match === null) {
-      foreach ($hand as $key => $value) {
-        if ($hand[$key][1] === $twoEnds[1]) {
-          $match = $key;
-          $reverse = true;
-          $begin = false;
-        }
-      }
-    }
-
-    // Player plays a domino.
-    if ($match !== null) {
-      if ($begin === true && $reverse === false) {
-        array_unshift($line, $hand[$match]);
-      }
-
-      if ($begin === true && $reverse === true) {
-        array_unshift($line, array_reverse($hand[$match], false));
-      }
-
-      if ($begin === false && $reverse === false) {
-        array_push($line, $hand[$match]);
-      }
-
-      if ($begin === false && $reverse === true) {
-        array_push($line, array_reverse($hand[$match], false));
-      }
+    if ($match === true) {
 
       // Updates the game when played a domino.
       $stock->setLine($line);
-      $printer->printMove($name, $hand[$match], $stock->getLine());
+      $printer->printMove($name, $hand[$key], $stock->getLine());
 
-      unset($hand[$match]);
+      unset($hand[$key]);
 
       $player->setHand($hand);
       $player->setPlayerPlays();
@@ -237,8 +194,6 @@ class Game
   {
     $this->turn = $turn;
   }
-
-
 
   public function setEndGame(bool $endGame)
   {

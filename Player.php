@@ -24,7 +24,7 @@ class Player {
   {
     $this->setName($name);
     $this->setColor();
-    $this->playercantPlay = false;
+    $this->playerCantPlay = false;
   }
 
   private function setColor(){
@@ -69,6 +69,10 @@ class Player {
   public function setPlayerPlays()
   {
     $this->playerCantPlay = false;
+  }
+
+  public function getPlayerCantPlay(){
+    return $this->playerCantPlay;
   }
 
   private function getColor(){
